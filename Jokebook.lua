@@ -303,7 +303,7 @@ end
 end
 }
 
-
+--[[
 SMODS.Seal {
   name = "modded-Seal",
   key = "blu",
@@ -348,12 +348,12 @@ config = {  },
 			}))
 		--end
   end
---]]
+
 
 G.E_MANAGER:add_event(Event({
   trigger = "after",
   func = function()
-    if context.individual --[[and context.cardarea == G.play ]] then
+    if context.individual --[[and context.cardarea == G.play then
     self:set_seal()
     card:juice_up()
   end
@@ -362,7 +362,7 @@ G.E_MANAGER:add_event(Event({
 }))
 end
 }
-
+--]]
 
 
 
