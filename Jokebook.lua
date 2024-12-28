@@ -281,18 +281,25 @@ SMODS.Joker {
   cost = 3,
   atlas = 'joker',
   pos = { x = 0, y = 0 },
-  config = { extra = { jackpot_dollar = 15, min_dollar = 3, odds = 20 } },
+  config = { extra = { jackpot_dollar = 50, min_dollar = 3, odds = 20 } },
   loc_vars = function(self, info_queue, card)
     return { vars = { card.ability.extra.jackpot_dollar, card.ability.extra.min_dollar, card.ability.extra.odds, (G.GAME.probabilities.normal or 1) } }
   end,
   blueprint_compat = true,
-
+  add_to_deck = function(self, card, from_debuff)
+    G.E_MANAGER:add_event(Event({
+      func = function()
+        card:set_rental(true)
+        return true
+          end
+    }))
+  end,
 
   calculate = function(self, card, context)
     if context.end_of_round then
       G.E_MANAGER:add_event(Event({
         func = function()
-        card:set_rental(true)
+        card:juice_up()
           if pseudorandom('Gambler') < G.GAME.probabilities.normal / card.ability.extra.odds then
             ease_dollars(card.ability.extra.jackpot_dollar)
           end
@@ -302,6 +309,247 @@ SMODS.Joker {
 end
 end
 }
+
+SMODS.Joker {
+  key = 'Sleigh_Bells',
+  loc_txt = {
+    name = 'Sleigh Bells',
+    text = {
+      "+{C:mult}#2#{} mult per opened {C:attention}booster pack{}",
+      "{C:interactive} [currently:{} {C:mult}#1#{} {C:interactive}]{}"
+    }
+  },
+  rarity = 1,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { mult = 0, mult_gain = 2 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.mult, card.ability.extra.mult_gain } }
+  end,
+  blueprint_compat = true,
+  calculate = function(self, card, context)
+    if context.open_booster then
+      card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.mult_gain
+      return{
+        message = localize{key='a_mult', k_upgraded},
+        card = card
+      }
+    end
+    if context.joker_main and card.ability.extra.mult >= 0 then
+      return{
+        message = localize{type='variable',key='a_mult',vars={card.ability.extra.mult}},
+        mult_mod = card.ability.extra.mult,
+        colour = G.C.MULT,
+        card = card
+      }
+    end
+  end
+}
+
+SMODS.Joker {
+  key = 'Sleigh_Bells',
+  loc_txt = {
+    name = 'Sleigh Bells',
+    text = {
+      "+{C:mult}#1#{} mult per {C:attention}enhanced{}",
+      "playing card currently in deck",
+      "{C:interactive} [currently:{} {C:mult}#1#{} {C:interactive}]{}"
+    }
+  },
+  rarity = 1,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { mult = 3, anta_driver_tally = 0} },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.mult, card.ability.santa_driver_tally } }
+  end,
+  blueprint_compat = true,
+  update = function (self, card, dt)
+    if context.before then
+      card.ability.santa_driver_tally = 0
+      for k, v in pairs(G.playing_cards) do
+          if v.config.center ~= G.P_CENTERS.c_base then card.ability.extra.stanta_driver_tally = card.ability.extra.santa_driver_tally+1 end
+      end
+  end
+end,
+  calculate = function(self, card, context)
+  if context.joker_main and card.ability.extra.santa_driver_tally >= 0 then
+    return{
+      message = localize{type='variable',key='a_mult',vars={card.ability.extra.mult*card.ability.extra.santa_driver_tally}},
+      mult_mod = card.ability.extra.mult*card.ability.extra.santa_driver_tally,
+      colour = G.C.MULT,
+      card = card
+    }
+  end
+end
+}
+
+SMODS.Joker {
+  key = 'Roundabout',
+  loc_txt = {
+    name = 'Roundabout',
+    text = {
+      "{X:mult}x1.5{} mult if hand is not {C:attention}straight{}"
+    }
+  },
+  rarity = 2,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { Xmult = 1.5 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.Xmult } }
+  end,
+  blueprint_compat = true,
+  calculate = function(self, card, context)
+    if context.joker_main and not next(context.poker_hands['Straight']) then
+      return {
+        message = localize { type = 'variable', key = 'a_xmult', vars = { card.ability.extra.Xmult } },
+        Xmult_mod = card.ability.extra.Xmult
+      }
+    end
+  end
+}
+
+SMODS.Joker {
+  key = 'Freeway',
+  loc_txt = {
+    name = 'Freeway',
+    text = {
+      "{C:mult}+5{} mult for every",
+      "conconsecutive {C:attention}straight{} played"
+    }
+  },
+  rarity = 2,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { mult = 0, mult_gain = 5 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.mult, card.ability.extra.mult_gain } }
+  end,
+  blueprint_compat = true,
+  calculate = function(self, card, context)
+    if context.before and next(context.poker_hands['Straight']) then
+      card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.mult_gain
+      return{
+        message = 'k_upgraded!',
+    }
+    end
+    if context.before and not next(context.poker_hands['Straight']) then
+      card.ability.extra.mult = 0
+      return{
+          message = 'reset!',
+      }
+    end
+    if context.joker_main and card.ability.extra.mult >= 0 then
+      return {
+        message = localize { type = 'variable', key = 'a_mult', vars = { card.ability.extra.mult } },
+        mult_mod = card.ability.extra.mult,
+        card = card
+      }
+    end
+  end
+}
+
+--[[
+--am not very familliar with copying cards, if anyone wants they can fix it :)
+
+SMODS.Joker {
+  key = 'Barbershop_Quartet',
+  loc_txt = {
+    name = 'Barbershop Quartet',
+    text = {
+      "{C:green}1 in 4{} chance",
+      "add a copy of",
+      "played {C:attention}4{} to deck"
+    }
+  },
+  rarity = 3,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { odds = 4 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { (G.GAME.probabilities.normal or 1), card.ability.extra.odds } }
+  end,
+  blueprint_compat = true,
+  calculate = function(self, card, context)
+    if context.other_card:get_id() == 4 and context.induvidual then
+      if pseudorandom('hehe') < G.GAME.probabilities.normal / card.ability.extra.odds then
+        --coppied from dna
+        G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+        local _card = copy_card(context.full_hand[1], nil, nil, G.playing_card)
+        _card:add_to_deck()
+        G.deck.config.card_limit = G.deck.config.card_limit + 1
+        table.insert(G.playing_cards, _card)
+        G.hand:emplace(_card)
+        _card.states.visible = nil
+        G.E_MANAGER:add_event(Event({
+          func = function()
+              _card:start_materialize()
+              return true
+          end
+        })) 
+        return {
+          message = localize('k_copied_ex'),
+          colour = G.C.CHIPS,
+          card = self,
+          playing_cards_created = {true}
+      }
+    end
+  end
+end
+}
+
+
+SMODS.Joker {
+  key = 'Dos',
+  loc_txt = {
+    name = 'Dos',
+    text = {
+      "{X:mult}X0.2{} mult per destroyed {C:attention}face card{}",
+      "{C:inactive}currently{} {X:mult}#1#{} {C:inactive}mult{}"
+    }
+  },
+  rarity = 2,
+  cost = 3,
+  atlas = 'joker',
+  pos = { x = 0, y = 0 },
+  config = { extra = { Xmult = 0, Xmult_gain = 0.2 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.Xmult, card.ability.extra.Xmult_gain } }
+  end,
+  blueprint_compat = true,
+  calculate = function(self, card, context)
+    if not context.blueprint then
+      for k, val in ipairs(context.removed) do
+        if val:is_face() then  --only face cards give +0.2 xmult (need to change it to all cards)
+          card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_gain
+          return{
+            G.E_MANAGER:add_event(Event({
+              func = function()
+                card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_xmult', vars = {card.ability.extra.Xmult}}});
+                return true
+              end
+            }))
+          }
+        end
+      end
+    end
+    if context.joker_main then
+      return{
+        message = localize { type = 'variable', key = 'a_xmult', vars = { card.ability.extra.Xmult } },
+        Xmult_mod = card.ability.extra.Xmult,
+        card = card
+      }
+    end
+  end
+}
+--]]
+
 
 --[[
 SMODS.Seal {
